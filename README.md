@@ -38,6 +38,7 @@ Mobile App: IP Webcam (Android) or iVCam (iOS).
 
 📸 Usage Instructions
 Setup Link: Start the server on your mobile app and update the url variable in the code with your IP (e.g., http://192.168.1.XX:8080/video).
+The IP changes based on server and location and block of the IP
 
 Train Model: Execute Sections 1-4 to generate the waste_features.csv and train the SVM "brain."
 

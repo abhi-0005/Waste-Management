@@ -1,0 +1,84 @@
+#SECTION 5
+import cv2
+import numpy as np
+from skimage.feature import graycomatrix, graycoprops
+
+# --- CONFIGURATION ---
+# Removed the invisible space at the end of the URL
+url = "http://100.71.206.182:8080/video" 
+
+cap = cv2.VideoCapture(url)
+
+# Warm up the camera buffer
+for _ in range(5):
+    cap.read()
+
+print("📱 PHONE SCANNER ACTIVE")
+print("Instructions: Place object in the GREEN BOX. Press 'S' to scan, 'Q' to quit.")
+
+while True:
+    ret, frame = cap.read()
+    
+    if not ret:
+        print("❌ Connection Error! Check if IP Webcam is running and on the same network.")
+        break
+    
+    # 1. DYNAMIC BOX CENTERING (Resolution Independent)
+    h, w, _ = frame.shape
+    box_size = int(h * 0.4) 
+    
+    t = (h - box_size) // 2
+    l = (w - box_size) // 2
+    b = t + box_size
+    r = l + box_size
+    
+    # Draw the Green Box UI
+    cv2.rectangle(frame, (l, t), (r, b), (0, 255, 0), 3)
+    cv2.putText(frame, "PLACE WASTE HERE", (l, t-10), 
+                cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+    
+    cv2.imshow('Final Phone-Linked Scanner', frame)
+    
+    key = cv2.waitKey(1)
+    
+    # --- SCAN LOGIC ---
+    if key == ord('s'):
+        roi = frame[t:b, l:r]
+        
+        # FEATURE 1 & 2: Color & Saturation
+        avg_col = cv2.mean(roi)[:3]
+        hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+        avg_sat = cv2.mean(hsv)[1]
+        
+        # FEATURE 3 & 4: Texture
+        gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+        glcm = graycomatrix(gray, [1], [0], 256, symmetric=True, normed=True)
+        cont = graycoprops(glcm, 'contrast')[0, 0]
+        homo = graycoprops(glcm, 'homogeneity')[0, 0]
+        
+        # FEATURE 5: Edge Density
+        edges = cv2.Canny(gray, 100, 200)
+        edge_dens = np.sum(edges > 0) / edges.size
+        
+        # 3. CREATE FEATURE ARRAY (7 Features)
+        feat = np.array([avg_col[0], avg_col[1], avg_col[2], 
+                         avg_sat, cont, homo, edge_dens]).reshape(1, -1)
+        
+        # 4. PREDICT
+        try:
+            # We use the 'scaler' and 'model' created in the previous sections
+            feat_scaled = scaler.transform(feat)
+            pred = model.predict(feat_scaled)[0]
+            
+            print("\n" + "="*30)
+            print(f"♻️  DETECTION: {pred.upper()}")
+            print("="*30)
+        except NameError:
+            print("❌ ERROR: 'scaler' or 'model' not found. Run Sections 3 & 4 first!")
+        
+    elif key == ord('q'):
+        break
+
+cap.release()
+cv2.destroyAllWindows()
+print("Scanner closed.")

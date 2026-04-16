@@ -1,0 +1,14 @@
+#LIBRARY & ENVIRONMENT SETUP SECTION 1
+import sys
+import os
+import cv2
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from skimage.feature import graycomatrix, graycoprops
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+from sklearn.metrics import classification_report, accuracy_score, ConfusionMatrixDisplay
+
+print("✅ Section 1: Libraries loaded successfully.")

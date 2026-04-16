@@ -1,0 +1,40 @@
+#SECTION 2 Enhanced Feature Extraction (7 Features)
+base_path = "archive/Garbage classification/Garbage classification"
+all_data = []
+
+print("📂 Section 2: Extraction started. This may take 1-2 minutes...")
+
+categories = [f for f in os.listdir(base_path) if os.path.isdir(os.path.join(base_path, f))]
+
+for category in categories:
+    folder_path = os.path.join(base_path, category)
+    images = [f for f in os.listdir(folder_path) if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
+    
+    for img_name in images:
+        img_path = os.path.join(folder_path, img_name)
+        img = cv2.imread(img_path)
+        if img is None: continue
+        
+        # 1. Color (Blue, Green, Red)
+        avg_col = cv2.mean(img)[:3]
+        
+        # 2. Saturation (Helps with dull materials like cardboard)
+        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        avg_sat = cv2.mean(hsv)[1] 
+        
+        # 3. Texture (Contrast and Homogeneity)
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        glcm = graycomatrix(gray, [1], [0], 256, symmetric=True, normed=True)
+        cont = graycoprops(glcm, 'contrast')[0, 0]
+        homo = graycoprops(glcm, 'homogeneity')[0, 0]
+
+        # 4. Edge Density (Helps with sharp metal/plastic vs soft paper)
+        edges = cv2.Canny(gray, 100, 200)
+        edge_dens = np.sum(edges > 0) / edges.size
+
+        all_data.append([avg_col[0], avg_col[1], avg_col[2], avg_sat, cont, homo, edge_dens, category])
+
+# Create the master CSV
+df = pd.DataFrame(all_data, columns=['Blue', 'Green', 'Red', 'Saturation', 'Contrast', 'Homogeneity', 'Edges', 'Label'])
+df.to_csv("waste_features.csv", index=False)
+print(f"✨ Section 2 Complete: 'waste_features.csv' created with {len(df)} samples.")
